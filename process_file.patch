@@ -1,0 +1,110 @@
+diff --git a/matlab/updated_scripts/find_zc_indices_by_file.m b/matlab/updated_scripts/find_zc_indices_by_file.m
+index 9858cc3..6adc765 100644
+--- a/matlab/updated_scripts/find_zc_indices_by_file.m
++++ b/matlab/updated_scripts/find_zc_indices_by_file.m
+@@ -33,7 +33,7 @@ function [zc_indices] = find_zc_indices_by_file(file_path, sample_rate, frequenc
+     assert(isnumeric(chunk_size), "Chunk size must be numeric");
+     assert(chunk_size > 0, "Chunk size must be > 0");
+     assert(mod(length(varargin), 2) == 0, "Varargs length must be a multiple of 2");
+-    
++
+     sample_type = 'single';
+     correlation_fig_num = -1;
+ 
+@@ -128,14 +128,14 @@ function [zc_indices] = find_zc_indices_by_file(file_path, sample_rate, frequenc
+     
+     % Get the floating normalized correlation results
+     abs_scores = abs(zc_scores).^2;
+-    
++
+     % Plot if requested
+-    if (correlation_fig_num > 0)
+-        figure(correlation_fig_num); 
+-        plot(abs_scores);
+-        title('Correlation Scores (normalized)')
+-    end
+-    
++    % if (correlation_fig_num > 0)
++    %    figure(correlation_fig_num);
++    %    plot(abs_scores);
++    %    title('Correlation Scores (normalized)')
++    % end
++
+     % Find all places where the correlation result meets the specified threshold
+     % This is going to find duplicates because there are very likely going to be two points right next to each other that
+     % meet the required threshold.  This will be dealt with later
+diff --git a/matlab/updated_scripts/process_file.m b/matlab/updated_scripts/process_file.m
+index c454473..fc2bccf 100644
+--- a/matlab/updated_scripts/process_file.m
++++ b/matlab/updated_scripts/process_file.m
+@@ -9,16 +9,19 @@
+ %   - Pass XOR'd bits from all other data symbols to a C++ program that removes the LTE and rate matching
+ %   - Print out each frame in hex
+ 
++pkg load signal
++
+ %% Path Info
+-if (is_octave)
+-  this_script_path = fileparts(mfilename('fullpath'));
+-else
+-  this_script_path = fileparts(matlab.desktop.editor.getActiveFilename);
+-end
++%% if (is_octave)
++this_script_path = fileparts(mfilename('fullpath'));
++addpath(this_script_path);
++%% else
++%%   this_script_path = fileparts(matlab.desktop.editor.getActiveFilename);
++%% end
+ 
+ % Create a directory to store the constellation plots for debugging
+ % THIS CAN BE COMMENTED OUT IF NEEDED!!!  JUST MAKE SURE TO COMMENT OUT THE `saveas` CALL LATER AS WELL
+-mkdir(fullfile(this_script_path, "images"));
++% mkdir(fullfile(this_script_path, "images"));
+ 
+ turbo_decoder_path = fullfile(this_script_path, filesep, '..', filesep, '..', filesep, 'cpp', filesep, 'remove_turbo');
+ if (~ isfile(turbo_decoder_path))
+@@ -30,9 +33,10 @@ end
+ enable_plots = 0; % Set to 0 to prevent the plots from popping up
+ 
+ sample_type = 'single';
+-file_path = '/opt/dji/collects/2437MHz_30.72MSPS.fc32';
+-file_sample_rate = 30.72e6;
+-file_freq_offset = 7.5e6; % This file was not recorded with the DroneID signal centered
++args = argv();
++file_path = args{1}; % '/opt/dji/collects/2437MHz_30.72MSPS.fc32';
++file_sample_rate = str2num(args{2}); % 30.72e6;
++file_freq_offset = str2num(args{3}); % 7.5e6; % This file was not recorded with the DroneID signal centered
+ 
+ correlation_threshold = 0.7; % The SNR is pretty good, so using a high correlation score (must be between 0.0 and 1.0)
+ chunk_size = 10e6;           % Number of samples to process at a time
+@@ -183,7 +187,7 @@ for burst_idx=1:size(bursts, 1)
+     
+     % Save the constellation plots to disk for debugging
+     % THIS CAN BE COMMENTED OUT IF NEEDED
+-    saveas(gcf, sprintf('%s/images/ofdm_symbol_%d.png', this_script_path, burst_idx));
++    % saveas(gcf, sprintf('%s/images/ofdm_symbol_%d.png', this_script_path, burst_idx));
+     
+     % The remaining bits are descrambled using the same initial value, but more bits
+     second_scrambler = generate_scrambler_seq(7200, scrambler_x2_init);
+@@ -198,12 +202,12 @@ for burst_idx=1:size(bursts, 1)
+     bits = bitxor(bits, second_scrambler);
+ 
+     % Write the descrambled bits to disk as 8-bit integers
+-    handle = fopen("/tmp/bits", "wb");
++    handle = fopen("/dev/shm/bits", "wb");
+     fwrite(handle, bits, 'int8');
+     fclose(handle);
+ 
+     % Run the Turbo decoder and rate matcher
+-    [retcode, out] = system(sprintf("%s %s", turbo_decoder_path, "/tmp/bits"));
++    [retcode, out] = system(sprintf("%s %s", turbo_decoder_path, "/dev/shm/bits"));
+     if (retcode ~= 0)
+         warning("Failed to run the final processing step");
+     end
+@@ -217,4 +221,4 @@ for idx=1:size(bursts, 1)
+     frame = frames{idx};
+ 
+     fprintf('FRAME: %s', frame);
+-end
+\ No newline at end of file
++end
