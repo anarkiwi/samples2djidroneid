@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install --no-install-recommends -yq \
 WORKDIR /build
 RUN git clone https://github.com/ttsou/turbofec
 RUN git clone https://github.com/proto17/dji_droneid
+WORKDIR /build/dji_droneid
+RUN git checkout 7fa0fc4988f88c6f608e86c003e204171d892fa3
 WORKDIR /build/turbofec
 RUN autoreconf -i && ./configure && make install && ldconfig -v
 WORKDIR /build/dji_droneid/cpp
