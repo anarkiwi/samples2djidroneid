@@ -37,5 +37,6 @@ COPY process_file.patch process_file.patch
 RUN patch -p1 < process_file.patch
 WORKDIR /root
 COPY samples2djidroneid.py samples2djidroneid.py
+COPY decode_djidroneid.py decode_djidroneid.py
 RUN /root/samples2djidroneid.py --help
 ENTRYPOINT ["/root/samples2djidroneid.py"]
