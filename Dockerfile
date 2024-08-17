@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as builder
+FROM ubuntu:24.04 as builder
 
 RUN apt-get update && apt-get install --no-install-recommends -yq \
      build-essential \
@@ -20,7 +20,7 @@ WORKDIR /build/dji_droneid/cpp
 RUN wget https://raw.githubusercontent.com/d-bahr/CRCpp/master/inc/CRC.h
 RUN g++ -Wall remove_turbo.cc -o remove_turbo -I. -I/usr/local/include -L/usr/local/lib -lturbofec
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install --no-install-recommends -yq \
      ca-certificates \
